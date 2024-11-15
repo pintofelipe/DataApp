@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">DataApp</string>
+    <string name="conectar_bluetooth">Conectar Bluetooth 77</string>
+    <string name="see_graph">Ver Análisis</string>
+    <string name="waitingForData">Esperando Datos...</string>
+</resources>
