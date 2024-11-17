@@ -87,8 +87,8 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-
     }
+
 
     private boolean checkPermissions() {
         return ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED &&
@@ -121,9 +121,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
-
-
 
 
 

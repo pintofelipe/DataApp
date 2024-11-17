@@ -17,14 +17,7 @@
         android:padding="16dp"
         >
 
-        <ImageView
-            android:layout_width="match_parent"
-            android:layout_height="77dp"
-            android:background="@color/cardview_dark_background"
-            android:contentDescription="TODO"
 
-
-            />
 
         <Button
             android:id="@+id/btnConnect"
@@ -49,7 +42,7 @@
             android:id="@+id/btnViewGrap"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/see_graph"/>
+            android:text="@string/see_graph" />
 
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
