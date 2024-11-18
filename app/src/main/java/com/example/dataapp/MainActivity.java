@@ -30,6 +30,8 @@ import androidx.core.view.WindowInsetsCompat;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -221,32 +223,104 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showGraph() {
-        // Aquí implementarás la lógica para mostrar la gráfica
-        // Puedes obtener el historial de datos así:
         try {
             JSONArray history = new JSONArray(sharedPreferences.getString(KEY_DATA_HISTORY, "[]"));
-            // Usar estos datos para crear tu gráfica
+            LineChart chart = findViewById(R.id.chart);
+
+            List<Entry> entries = new ArrayList<>();
+            List<String> labels = new ArrayList<>();
+
+            for (int i = 0; i < history.length(); i++) {
+                JSONArray record = history.getJSONArray(i);
+                try {
+                    double value = Double.parseDouble(record.getString(1));
+                    entries.add(new Entry(i, (float) value));
+                    labels.add(record.getString(0)); // Timestamp
+                } catch (NumberFormatException e) {
+                    continue;
+                }
+            }
+
+            LineDataSet dataSet = new LineDataSet(entries, "Lecturas de pH");
+            dataSet.setColor(Color.BLUE);
+            dataSet.setValueTextColor(Color.RED);
+
+            LineData lineData = new LineData(dataSet);
+            chart.setData(lineData);
+
+            // Configurar ejes
+            XAxis xAxis = chart.getXAxis();
+            xAxis.setValueFormatter(new IndexAxisValueFormatter(labels));
+
+            chart.invalidate(); // Refrescar gráfica
         } catch (JSONException e) {
             e.printStackTrace();
         }
     }
+
     private void startReadingData() {
         new Thread(() -> {
             byte[] buffer = new byte[1024];
             int bytes;
             try {
                 while ((bytes = inputStream.read(buffer)) > 0) {
-                    String receivedData = new String(buffer, 0, bytes);
-                    runOnUiThread(() -> {
-                        tvData.setText("Datos recibidos: " + receivedData);
-                        saveDataToPreferences(receivedData);
-                    });
+                    String receivedData = new String(buffer, 0, bytes).trim();
+
+                    // Validar formato de datos para pH
+                    try {
+                        // Extraer valor numérico usando expresión regular
+                        String phString = receivedData.replaceAll("[^0-9.]", "");
+                        double phValue = Double.parseDouble(phString);
+
+                        // Verificar rango válido de pH (0-14)
+                        if (phValue >= 0 && phValue <= 14) {
+                            runOnUiThread(() -> {
+                                tvData.setText("pH: " + phValue);
+                                saveDataToPreferences(String.valueOf(phValue));
+
+                                // Añadir color según el pH
+                                if (phValue < 6.5) {
+                                    tvData.setTextColor(Color.RED); // Ácido
+                                } else if (phValue > 8.5) {
+                                    tvData.setTextColor(Color.BLUE); // Básico
+                                } else {
+                                    tvData.setTextColor(Color.GREEN); // Neutro
+                                }
+                            });
+                        }
+                    } catch (NumberFormatException e) {
+                        // Manejar datos no numéricos
+                        runOnUiThread(() -> tvData.setText("Dato inválido: " + receivedData));
+                    }
                 }
             } catch (Exception e) {
-                runOnUiThread(() -> tvData.setText("Error leyendo datos"));
+                runOnUiThread(() -> tvData.setText("Error leyendo datos: " + e.getMessage()));
             }
         }).start();
     }
+
+
+    private void checkWaterQuality(double phValue) {
+        String qualityMessage;
+
+        if (phValue < 6.5) {
+            qualityMessage = "Agua ácida - Puede ser corrosiva";
+        } else if (phValue > 8.5) {
+            qualityMessage = "Agua muy básica - Posible contaminación";
+        } else if (phValue >= 6.5 && phValue <= 8.5) {
+            qualityMessage = "Agua dentro del rango óptimo";
+        } else {
+            qualityMessage = "Dato de pH no válido";
+        }
+
+        // Mostrar mensaje de calidad
+        runOnUiThread(() -> {
+            TextView tvQuality = findViewById(R.id.tvQualityMessage);
+            tvQuality.setText(qualityMessage);
+        });
+    }
+
+
 
     private boolean checkPermissions() {
         return ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED &&
@@ -301,7 +375,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             // Buscar el dispositivo Bluetooth emparejado (modificar según el nombre real)
-            String deviceName = "HC-05"; // Cambia este nombre según tu módulo
+            String deviceName = "COCO77"; // Cambia este nombre según tu módulo
             bluetoothDevice = null;
             for (BluetoothDevice device : bluetoothAdapter.getBondedDevices()) {
                 if (device.getName().equals(deviceName)) {
